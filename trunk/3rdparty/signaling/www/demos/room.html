@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SRS</title>
+    <title>BlueSky Audio</title>
     <meta charset="utf-8">
     <style>
         body{
@@ -19,8 +19,8 @@
 <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
         <div class="container">
-            <a class="brand" href="https://github.com/ossrs/srs">SRS</a>
-            <div class="nav-collapse collapse">
+            <a class="brand" href="https://github.com/ossrs/srs">BlueSky Audio</a>
+            <!-- <div class="nav-collapse collapse">
                 <ul class="nav srs_nav">
                     <li><a href="one2one.html">一对一通话</a></li>
                     <li class="active"><a href="room.html">多人通话</a></li>
@@ -30,32 +30,35 @@
                         </a>
                     </li>
                 </ul>
-            </div>
+            </div> -->
         </div>
     </div>
 </div>
 <div class="container">
+    <select name="audio" id="audio">
+    </select>
+    <button id="mute_btn" onclick="muteBtnClick()">Mute Mic</button>
     <div class="form-inline">
-        SRS:
-        <input type="text" id="txt_host" class="input-medium" value="">
+        Server:
+        <input type="text" id="txt_host" class="input-medium" value="159.65.224.148">
         Room:
         <input type="text" id="txt_room" class="input-small" value="live">
         Display:
         <input type="text" id="txt_display" class="input-small" value="">
-        <button class="btn btn-primary" id="btn_start">加入房间</button>
+        <button class="btn btn-primary" id="btn_start">Connect</button>
     </div>
 
     <div class="row srs_players">
         <div class="span4 hide" id="publisher">
             <label></label>
-            <video id="rtc_media_publisher" width="310" autoplay muted controls></video>
+            <audio id="rtc_media_publisher" width="1280" height="720" autoplay muted controls></audio>
 
             <label></label>
             <span id='self'></span>
         </div>
         <div class="span4 hide" id="player">
             <label></label>
-            <video id="rtc_media_player" width="310" autoplay muted controls></video>
+            <audio id="rtc_media_player" width="310" autoplay controls></audio>
 
             <label></label>
             <span id='peer'></span>
@@ -63,6 +66,56 @@
     </div>
 </div>
 <script type="text/javascript">
+    let localStream = null
+    let audioDevice = ''
+    let isMuted = false
+   async function muteMic (mute) {
+     let tracks = localStream.getAudioTracks();
+     for(const track of tracks){
+        track.enabled = mute
+     }
+    console.log(localStream.getAudioTracks());
+    if(isMuted){
+        isMuted = false
+    } else {
+        isMuted = true
+    }
+};
+    
+    // setInterval(async () => {
+    //     console.log(localStream.getAudioTracks());
+    // }, 3000)
+    function muteBtnClick() {
+        var btn = document.getElementById("mute_btn");
+        console.log(btn)
+        if (isMuted) {  
+            console.log('unmuting')
+            muteMic(true);
+            btn.innerHTML = "Mute Mic";
+      } else {
+        muteMic(false);
+            btn.innerHTML = "Unmute Mic";
+      }
+    }
+        async function loadDevices(){
+            (await navigator.mediaDevices.getUserMedia({audio: true, video: true})).getTracks().forEach(t => t.stop()); // Gets the required permissions.
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+            const audioDevices = devices.filter(d => d.kind === 'audioinput');
+        console.log({videoDevices, audioDevices});
+        var audioSelect = document.getElementById("audio");
+        audioSelect.addEventListener('change', function() {
+            console.log('SELECTED NEW AUDIO DEVICE: ', audioSelect.value)
+            audioDevice = audioSelect.value
+        })
+        for (const device of audioDevices) {
+            var option = document.createElement("option");
+            option.text = device.label;
+            option.value = device.deviceId;
+            audioSelect.add(option);
+        }
+        }
+        loadDevices();
     var sig = null;
     var publisher = null;
     var players = {}; // Key is display, value is a player object.
@@ -138,7 +191,10 @@
             if (publisher) {
                 publisher.close();
             }
-            publisher = new SrsRtcPublisherAsync();
+            console.log('GEEKEN: PUBLISH AUDIO: ', audioDevice)
+            publisher = new SrsRtcPublisherAsync(audioDevice);
+            localStream = publisher.stream
+            
             $('#rtc_media_publisher').prop('srcObject', publisher.stream);
 
             return publisher.publish(url).then(function(session){
@@ -189,7 +245,7 @@
 
         // Pass-by to SRS url.
         let conf = SrsRtcSignalingParse(window.location);
-        $('#txt_host').val(conf.host);
+        $('#txt_host').val('159.65.224.148');
         conf.room && $('#txt_room').val(conf.room);
         $('#txt_display').val(conf.display);
 

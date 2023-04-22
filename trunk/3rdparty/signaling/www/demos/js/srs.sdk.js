@@ -23,18 +23,19 @@
  */
 
 'use strict';
-
+console.log('INIT SDK')
 // Depends on adapter-7.4.0.min.js from https://github.com/webrtc/adapter
 // Async-awat-prmise based SRS RTC Publisher.
-function SrsRtcPublisherAsync() {
+function SrsRtcPublisherAsync(audioDeviceId) {
+    console.log('INIT AUDIO WITH DEVICE ID: ' + audioDeviceId )
     var self = {};
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
     self.constraints = {
-        audio: true,
-        video: {
-            width: {ideal: 320, max: 576}
-        }
+        audio: {
+            deviceId: audioDeviceId,
+        },
+        video: false,
     };
 
     // @see https://github.com/rtcdn/rtcdn-draft
